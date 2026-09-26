@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
-    <include domain="sharedpref" path="pvz_fusion_prefs.xml" />
-    <include domain="file" path="save_slots" />
-    <include domain="file" path="backups" />
+    <include domain="sharedpref" path="pvz_fusion_settings.xml" />
+    <include domain="file" path="pvz_fusion" />
 </full-backup-content>

@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "PvZ Fusion"
 include(":app")
+rootProject.name = "PvZ Fusion"
