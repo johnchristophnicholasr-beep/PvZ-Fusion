@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent">
+    <LinearLayout android:orientation="vertical" android:padding="20dp" android:layout_width="match_parent" android:layout_height="wrap_content">
+        <TextView android:text="Settings" android:textSize="30sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        <TextView android:text="All preferences are stored locally on this device." android:layout_marginTop="8dp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        <Switch android:id="@+id/setting_sound" android:text="Sound effects" android:layout_marginTop="20dp" android:layout_width="match_parent" android:layout_height="wrap_content" />
+        <Switch android:id="@+id/setting_music" android:text="Music" android:layout_width="match_parent" android:layout_height="wrap_content" />
+        <Switch android:id="@+id/setting_particles" android:text="Particles and visual effects" android:layout_width="match_parent" android:layout_height="wrap_content" />
+        <Switch android:id="@+id/setting_reduced_motion" android:text="Reduce motion" android:layout_width="match_parent" android:layout_height="wrap_content" />
+        <TextView android:text="Difficulty" android:layout_marginTop="20dp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        <Spinner android:id="@+id/setting_difficulty" android:entries="@array/difficulty_options" android:layout_width="match_parent" android:layout_height="wrap_content" />
+        <Button android:id="@+id/btn_reset_settings" android:text="Restore Defaults" android:layout_marginTop="24dp" android:layout_width="match_parent" android:layout_height="wrap_content" />
+    </LinearLayout>
+</ScrollView>
