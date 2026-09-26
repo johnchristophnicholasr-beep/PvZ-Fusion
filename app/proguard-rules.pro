@@ -1,0 +1,7 @@
+-keepattributes *Annotation*
+-keep class com.pvzfusion.game.data.** { *; }
+-keep class com.pvzfusion.game.models.** { *; }
+-keepclassmembers class * implements com.google.gson.JsonDeserializable { *; }
+-keep class com.google.gson.stream.** { *; }
+-dontwarn sun.misc.**
+-dontwarn android.util.**
