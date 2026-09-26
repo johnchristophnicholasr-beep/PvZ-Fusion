@@ -6,10 +6,138 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import com.pvzfusion.game.data.*
-import kotlin.math.max
+import kotlin.math.abs
 
-class GameView(context: Context, attrs: AttributeSet?=null): View(context,attrs) {
- private val paint=Paint(Paint.ANTI_ALIAS_FLAG); private var sun=150; private var wave=1; private var selected="peashooter"; private val plants=PlantDatabase.getBasePlants(); private val placed=mutableListOf<Pair<Int,Int>>(); private var last=0L
- override fun onDraw(c:Canvas){super.onDraw(c); val w=width.toFloat(); val h=height.toFloat(); c.drawColor(Color.rgb(126,198,91)); paint.color=Color.rgb(220,245,255); c.drawRect(0f,0f,w,h*.16f,paint); paint.color=Color.DKGRAY; paint.textSize=34f; c.drawText("Wave $wave    Sun $sun",20f,55f,paint); paint.textSize=20f; c.drawText("Tap a tile to plant • Tap the palette to select",20f,95f,paint); paint.color=Color.rgb(91,64,40); for(row in 0..4) for(col in 0..7){val l=col*w/8;val t=h*.2f+row*h*.14f; paint.color=if((row+col)%2==0)Color.rgb(112,181,72) else Color.rgb(101,169,66);c.drawRect(l+2,t+2,l+w/8-2,t+h*.14f-2,paint)}; placed.forEach{(col,row)->paint.color=if(selected.contains("cherry"))Color.RED else Color.rgb(55,150,55);c.drawCircle((col+.5f)*w/8,h*.2f+(row+.5f)*h*.14f,28f,paint)};paint.color=Color.WHITE; c.drawText("PEA",20f,h-95,paint);c.drawText("CHERRY",100f,h-95,paint);c.drawText("ICE",220f,h-95,paint) }
- override fun onTouchEvent(e:MotionEvent):Boolean{if(e.action!=MotionEvent.ACTION_UP)return true; val h=height.toFloat(); if(e.y>h-140){selected=when{e.x<95->"peashooter";e.x<205->"cherry_bomb";else->"ice_peashooter"};invalidate();return true};if(e.y>h*.2f&&e.y<h*.9f){val col=(e.x/(width/8f)).toInt().coerceIn(0,7);val row=((e.y-h*.2f)/(h*.14f)).toInt().coerceIn(0,4);if(!placed.contains(col to row)&&sun>=plants.firstOrNull{it.id==selected}?.cost?:0){sun-=plants.firstOrNull{it.id==selected}?.cost?:0;placed.add(col to row);invalidate()}};return true}
+class GameView(context: Context, attrs: AttributeSet? = null) : View(context, attrs) {
+    private var board = GameBoard()
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private var selected = "peashooter"
+    private var running = true
+    private var lastTime = System.currentTimeMillis()
+    private val plants = PlantDatabase.getBasePlants()
+
+    init {
+        Thread {
+            while (running) {
+                val now = System.currentTimeMillis()
+                val delta = (now - lastTime).coerceAtMost(33L)
+                lastTime = now
+                GameEngine.update(board, delta)
+                postInvalidate()
+                Thread.sleep(16)
+            }
+        }.start()
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        val w = width.toFloat()
+        val h = height.toFloat()
+
+        // Draw grass background
+        canvas.drawColor(Color.rgb(126, 198, 91))
+
+        // Draw sky
+        paint.color = Color.rgb(220, 245, 255)
+        canvas.drawRect(0f, 0f, w, h * 0.16f, paint)
+
+        // Draw HUD
+        paint.color = Color.DKGRAY
+        paint.textSize = 34f
+        canvas.drawText("Wave ${board.wave}    Sun ${board.sun}", 20f, 55f, paint)
+        paint.textSize = 20f
+        canvas.drawText("Tap a tile to place • Selected: $selected", 20f, 95f, paint)
+
+        // Draw grid
+        val tileW = w / board.width
+        val tileH = (h * 0.8f) / board.height
+        for (row in 0 until board.height) {
+            for (col in 0 until board.width) {
+                val l = col * tileW
+                val t = h * 0.16f + row * tileH
+                paint.color = if ((row + col) % 2 == 0) Color.rgb(112, 181, 72) else Color.rgb(101, 169, 66)
+                canvas.drawRect(l + 2, t + 2, l + tileW - 2, t + tileH - 2, paint)
+            }
+        }
+
+        // Draw plants
+        board.plants.forEach { p ->
+            paint.color = when (p.data.id) {
+                "peashooter" -> Color.rgb(100, 180, 50)
+                "ice_peashooter" -> Color.rgb(150, 200, 255)
+                "cherry_bomb" -> Color.RED
+                else -> Color.rgb(200, 100, 50)
+            }
+            val x = p.col * tileW + tileW / 2
+            val y = h * 0.16f + p.row * tileH + tileH / 2
+            canvas.drawCircle(x, y, 24f, paint)
+            paint.color = Color.WHITE
+            paint.textSize = 12f
+            canvas.drawText(p.data.name.take(3), x - 12f, y + 4f, paint)
+        }
+
+        // Draw zombies
+        board.zombies.forEach { z ->
+            paint.color = when (z.data.id) {
+                "cone_zombie" -> Color.rgb(200, 150, 100)
+                else -> Color.rgb(100, 100, 100)
+            }
+            val y = h * 0.16f + z.row * tileH + tileH / 2
+            canvas.drawCircle(z.x / 100f * tileW, y, 20f, paint)
+            paint.color = Color.WHITE
+            paint.textSize = 10f
+            canvas.drawText("Z", z.x / 100f * tileW - 4f, y + 3f, paint)
+        }
+
+        // Draw projectiles
+        board.projectiles.forEach { p ->
+            paint.color = when (p.type) {
+                "ice_pea" -> Color.CYAN
+                "bomb", "explosive_pea" -> Color.RED
+                else -> Color.YELLOW
+            }
+            canvas.drawCircle(p.x / 100f * tileW, h * 0.16f + p.targetRow * tileH + tileH / 2, 5f, paint)
+        }
+
+        // Draw plant selector
+        paint.color = Color.WHITE
+        paint.textSize = 18f
+        canvas.drawText("PEA", 20f, h - 20f, paint)
+        canvas.drawText("CHERRY", 100f, h - 20f, paint)
+        canvas.drawText("ICE", 220f, h - 20f, paint)
+    }
+
+    override fun onTouchEvent(event: MotionEvent?): Boolean {
+        if (event?.action != MotionEvent.ACTION_UP) return true
+        val w = width.toFloat()
+        val h = height.toFloat()
+        val tileW = w / board.width
+        val tileH = (h * 0.8f) / board.height
+
+        // Plant selector
+        if (event.y > h - 140) {
+            selected = when {
+                event.x < 95 -> "peashooter"
+                event.x < 205 -> "cherry_bomb"
+                else -> "ice_peashooter"
+            }
+            invalidate()
+            return true
+        }
+
+        // Board click
+        if (event.y > h * 0.16f && event.y < h * 0.96f) {
+            val col = (event.x / tileW).toInt().coerceIn(0, board.width - 1)
+            val row = ((event.y - h * 0.16f) / tileH).toInt().coerceIn(0, board.height - 1)
+            val data = plants.find { it.id == selected } ?: return true
+            if (GameEngine.addPlant(board, selected, row, col)) {
+                board = board.copy(sun = board.sun - data.cost)
+            }
+            invalidate()
+        }
+        return true
+    }
+
+    fun pause() { running = false }
+    fun resume() { running = true; lastTime = System.currentTimeMillis() }
 }
