@@ -1,33 +1,13 @@
-# Gradle
 .gradle/
 build/
 *.apk
 *.ap_
 *.dex
 *.class
-
-# Android Studio
+*.jar
+*.so
 .idea/
 *.iml
-*.iws
-*.ipr
-.DS_Store
-
-# Local configuration file
 local.properties
-
-# Binaries
-*.jar
-*.war
-*.aar
-*.exe
-*.o
-*.so
-
-# Logs
-*.log
-log*.xml
-
-# Environment
-.env
-.env.local
+.DS_Store
+gradle/wrapper/gradle-wrapper.jar
