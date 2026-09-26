@@ -2,6 +2,8 @@ package com.pvzfusion.game.ui
 
 import android.os.Bundle
 import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.pvzfusion.game.R
 import com.pvzfusion.game.data.GameStateManager
@@ -15,8 +17,18 @@ class GameActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_game)
         manager = GameStateManager(this)
+        val mode = intent.getStringExtra("mode") ?: "story"
+        
+        val container = findViewById<FrameLayout>(R.id.game_container)
         gameView = GameView(this)
-        findViewById<FrameLayout>(R.id.game_container).addView(gameView)
+        container.addView(gameView)
+        
+        val modeLabel = findViewById<TextView>(R.id.mode_label)
+        modeLabel?.text = when (mode) {
+            "tutorial" -> "Tutorial Mode"
+            "challenge" -> "Challenge Mode"
+            else -> "Story Mode"
+        }
     }
 
     override fun onPause() {

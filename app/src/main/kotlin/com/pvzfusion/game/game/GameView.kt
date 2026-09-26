@@ -6,7 +6,7 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import com.pvzfusion.game.data.*
-import kotlin.math.abs
+import kotlin.math.sqrt
 
 class GameView(context: Context, attrs: AttributeSet? = null) : View(context, attrs) {
     private var board = GameBoard()
@@ -15,9 +15,10 @@ class GameView(context: Context, attrs: AttributeSet? = null) : View(context, at
     private var running = true
     private var lastTime = System.currentTimeMillis()
     private val plants = PlantDatabase.getBasePlants()
+    private val gameThread: Thread
 
     init {
-        Thread {
+        gameThread = Thread {
             while (running) {
                 val now = System.currentTimeMillis()
                 val delta = (now - lastTime).coerceAtMost(33L)
@@ -26,7 +27,8 @@ class GameView(context: Context, attrs: AttributeSet? = null) : View(context, at
                 postInvalidate()
                 Thread.sleep(16)
             }
-        }.start()
+        }
+        gameThread.start()
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -60,23 +62,33 @@ class GameView(context: Context, attrs: AttributeSet? = null) : View(context, at
             }
         }
 
-        // Draw plants
+        // Draw plants with health bars
         board.plants.forEach { p ->
             paint.color = when (p.data.id) {
                 "peashooter" -> Color.rgb(100, 180, 50)
                 "ice_peashooter" -> Color.rgb(150, 200, 255)
                 "cherry_bomb" -> Color.RED
+                "wall_nut" -> Color.rgb(139, 69, 19)
+                "repeater" -> Color.rgb(75, 150, 50)
                 else -> Color.rgb(200, 100, 50)
             }
             val x = p.col * tileW + tileW / 2
             val y = h * 0.16f + p.row * tileH + tileH / 2
             canvas.drawCircle(x, y, 24f, paint)
+            
+            // Draw health bar
+            val healthPercent = (p.health / p.data.health).coerceIn(0f, 1f)
+            paint.color = Color.RED
+            canvas.drawRect(x - 20, y + 30, x + 20, y + 35, paint)
+            paint.color = Color.GREEN
+            canvas.drawRect(x - 20, y + 30, x - 20 + 40 * healthPercent, y + 35, paint)
+            
             paint.color = Color.WHITE
             paint.textSize = 12f
             canvas.drawText(p.data.name.take(3), x - 12f, y + 4f, paint)
         }
 
-        // Draw zombies
+        // Draw zombies with health bars
         board.zombies.forEach { z ->
             paint.color = when (z.data.id) {
                 "cone_zombie" -> Color.rgb(200, 150, 100)
@@ -84,12 +96,20 @@ class GameView(context: Context, attrs: AttributeSet? = null) : View(context, at
             }
             val y = h * 0.16f + z.row * tileH + tileH / 2
             canvas.drawCircle(z.x / 100f * tileW, y, 20f, paint)
+            
+            // Draw health bar
+            val healthPercent = (z.health / z.data.health).coerceIn(0f, 1f)
+            paint.color = Color.RED
+            canvas.drawRect(z.x / 100f * tileW - 18, y + 25, z.x / 100f * tileW + 18, y + 30, paint)
+            paint.color = Color.GREEN
+            canvas.drawRect(z.x / 100f * tileW - 18, y + 25, z.x / 100f * tileW - 18 + 36 * healthPercent, y + 30, paint)
+            
             paint.color = Color.WHITE
             paint.textSize = 10f
             canvas.drawText("Z", z.x / 100f * tileW - 4f, y + 3f, paint)
         }
 
-        // Draw projectiles
+        // Draw projectiles with glow
         board.projectiles.forEach { p ->
             paint.color = when (p.type) {
                 "ice_pea" -> Color.CYAN
@@ -99,12 +119,15 @@ class GameView(context: Context, attrs: AttributeSet? = null) : View(context, at
             canvas.drawCircle(p.x / 100f * tileW, h * 0.16f + p.targetRow * tileH + tileH / 2, 5f, paint)
         }
 
-        // Draw plant selector
+        // Draw plant selector palette
+        paint.color = Color.rgb(200, 200, 200)
+        canvas.drawRect(0f, h - 120f, w, h, paint)
+        
         paint.color = Color.WHITE
         paint.textSize = 18f
-        canvas.drawText("PEA", 20f, h - 20f, paint)
-        canvas.drawText("CHERRY", 100f, h - 20f, paint)
-        canvas.drawText("ICE", 220f, h - 20f, paint)
+        canvas.drawText("PEA (100s)", 20f, h - 20f, paint)
+        canvas.drawText("CHERRY (150s)", 100f, h - 20f, paint)
+        canvas.drawText("ICE (125s)", 220f, h - 20f, paint)
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
