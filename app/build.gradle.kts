@@ -13,22 +13,41 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0.0"
-
+        
+        vectorDrawables.useSupportLibrary = true
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("debug") // Use debug for now; replace with release keystore before Play Store
+        }
+        debug {
+            isMinifyEnabled = false
+            debuggable = true
         }
     }
+    
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
+    
     kotlinOptions {
         jvmTarget = "1.8"
+    }
+    
+    packaging {
+        resources {
+            excludes += listOf(
+                "META-INF/proguard/androidx-*.pro",
+                "META-INF/kotlin/**",
+                "kotlin/**"
+            )
+        }
     }
 }
 
